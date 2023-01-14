@@ -1,5 +1,6 @@
 package com.lixoten.demolistdetailnavigation.ui
 
+import android.app.Activity
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -9,6 +10,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -16,44 +18,102 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.lixoten.demolistdetailnavigation.model.Stuff
+import com.lixoten.stuff.utils.StuffContentType
 
 @Composable
-fun StuffApp() {
+fun StuffApp(
+    windowSize: WindowWidthSizeClass
+) {
     val viewModel: StuffViewModel = viewModel()
     val uiState by viewModel.uiState.collectAsState()
+
+    val contentType = when (windowSize) {
+        WindowWidthSizeClass.Compact,
+        WindowWidthSizeClass.Medium -> {
+            StuffContentType.ListOnly
+        }
+        WindowWidthSizeClass.Expanded -> {
+            StuffContentType.ListAndDetail
+        }
+        else -> {
+            StuffContentType.ListOnly
+        }
+    }
 
     Scaffold(
         topBar = {
             AppTopBar(
                 currentStuffName = uiState.currentStuff.title,
                 isShowingListPage = uiState.isShowingListPage,
-                onBackButtonClick = { viewModel.navigateToListPage() }
+                onBackButtonClick = { viewModel.navigateToListPage() },
+                windowSize = windowSize
             )
         }
     ) { innerPadding ->
-        if (uiState.isShowingListPage) {
-            StuffListScreen(
-                stuffList = uiState.stuffList,
-                onItemClick = {
-                    viewModel.updateCurrentStuff(it)
-                    viewModel.navigateToDetailPage()
-                },
-                modifier = Modifier.padding(innerPadding)
-            )
+        if (contentType == StuffContentType.ListAndDetail) {
+            Row(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                StuffListAndDetailScreen(
+                    stuffList = uiState.stuffList,
+                    selectedStuff = uiState.currentStuff,
+                    onItemClick = {
+                        viewModel.updateCurrentStuff(it)
+                        viewModel.navigateToDetailPage()
+                    },
+                )
+            }
         } else {
-            StuffDetailScreen(
-                stuffItem = uiState.currentStuff,
-                onBackPressed = { viewModel.navigateToListPage() },
-                modifier = Modifier.padding(innerPadding)
-            )
+            if (uiState.isShowingListPage) {
+                StuffListScreen(
+                    stuffList = uiState.stuffList,
+                    onItemClick = {
+                        viewModel.updateCurrentStuff(it)
+                        viewModel.navigateToDetailPage()
+                    },
+                    modifier = Modifier.padding(innerPadding)
+                )
+            } else {
+                StuffDetailScreen(
+                    stuffItem = uiState.currentStuff,
+                    onBackPressed = { viewModel.navigateToListPage() },
+                    modifier = Modifier.padding(innerPadding)
+                )
+            }
         }
     }
 }
+
+@Composable
+private fun StuffListAndDetailScreen(
+    stuffList: List<Stuff>,
+    selectedStuff: Stuff,
+    onItemClick: (Stuff) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier.fillMaxWidth()
+    ) {
+        StuffListScreen(
+            stuffList = stuffList,
+            onItemClick = onItemClick,
+            modifier = Modifier.weight(1f),
+        )
+        val activity = (LocalContext.current as Activity)
+        StuffDetailScreen(
+            stuffItem = selectedStuff,
+            onBackPressed = { activity.finish() },
+            modifier = Modifier.weight(1f),
+        )
+    }
+}
+
 
 @Composable
 fun StuffListScreen(

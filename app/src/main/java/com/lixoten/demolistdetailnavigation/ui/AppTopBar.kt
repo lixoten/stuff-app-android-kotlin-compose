@@ -6,6 +6,7 @@ import androidx.compose.material.Text
 import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.lixoten.demolistdetailnavigation.R
@@ -15,18 +16,21 @@ import com.lixoten.demolistdetailnavigation.R
 fun AppTopBar(
     currentStuffName: String,
     isShowingListPage: Boolean,
-    onBackButtonClick: () -> Unit
+    onBackButtonClick: () -> Unit,
+    windowSize: WindowWidthSizeClass
 ) {
+    val isShowingDetailPage = windowSize != WindowWidthSizeClass.Expanded && !isShowingListPage
+
     TopAppBar(
         title = {
-            if (isShowingListPage) {
-                Text(text = stringResource(R.string.list_screen_name))
-            } else {
+            if (isShowingDetailPage) {
                 Text(text = currentStuffName)
+            } else {
+                Text(text = stringResource(R.string.list_screen_name))
             }
         },
         navigationIcon =
-        if (!isShowingListPage) {
+        if (isShowingDetailPage) {
             {
                 IconButton(onClick = onBackButtonClick) {
                     Icon(
